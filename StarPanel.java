@@ -15,6 +15,7 @@ public class StarPanel extends JPanel {
             add(starLabel);
         }
         updateStarColors();
+
     }
 
     public int getRating() {

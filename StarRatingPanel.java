@@ -1,19 +1,21 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 
 public class StarRatingPanel extends JPanel {
     private int rating;
+    private JTextField commentTextField;
 
     public StarRatingPanel() {
         setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+
         for (int i = 1; i <= 5; i++) {
             JLabel starLabel = new JLabel("\u2605");
             starLabel.setFont(new Font("Serif", Font.PLAIN, 30));
             starLabel.addMouseListener(new StarClickListener(i));
             add(starLabel);
         }
+
         updateStarColors();
     }
 
@@ -48,4 +50,5 @@ public class StarRatingPanel extends JPanel {
             }
         }
     }
+
 }

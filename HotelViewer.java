@@ -38,23 +38,20 @@ public class HotelViewer extends JFrame {
             String username = "root";
             String password = "ramzi";
 
-            Connection connection = DriverManager.getConnection(url, username, password);
+            try (Connection connection = DriverManager.getConnection(url, username, password)) {
 
-            // Exécuter la requête pour récupérer les données de l'hôtel
-            String query = "SELECT nomhotel FROM hotel";
-            PreparedStatement preparedStatement = connection.prepareStatement(query);
-            var resultSet = preparedStatement.executeQuery();
+                // Exécuter la requête pour récupérer les données de l'hôtel
+                String query = "SELECT nomhotel FROM hotel";
+                try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                    var resultSet = preparedStatement.executeQuery();
 
-            // Afficher les noms d'hôtels avec la couleur de texte rouge
-            while (resultSet.next()) {
-                String hotelName = resultSet.getString("nomhotel");
-                createHotelPanel(hotelName);
+                    // Afficher les noms d'hôtels avec la couleur de texte rouge
+                    while (resultSet.next()) {
+                        String hotelName = resultSet.getString("nomhotel");
+                        createHotelPanel(hotelName);
+                    }
+                }
             }
-
-            // Fermer les ressources
-            resultSet.close();
-            preparedStatement.close();
-            connection.close();
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
@@ -80,39 +77,23 @@ public class HotelViewer extends JFrame {
         JFrame hotelFrame = new JFrame(hotelName);
         hotelFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        JPanel hotelPanel = new JPanel(new GridLayout(8, 2));
+        JPanel hotelPanel = new JPanel(new GridLayout(10, 2));
 
-        // Ajouter des composants pour les détails de l'hôtel (vous pouvez personnaliser cela)
-        JLabel nameLabel = new JLabel("Nom de l'hôtel:");
-        JTextField nameField = new JTextField(hotelName);
-        JLabel securityLabel = new JLabel("Note de sécurité:");
-        StarRatingPanel securityRatingPanel = new StarRatingPanel();
-        JLabel foodLabel = new JLabel("Note de nourriture:");
-        StarRatingPanel foodRatingPanel = new StarRatingPanel();
-        JLabel cleanlinessLabel = new JLabel("Note de propreté:");
-        StarRatingPanel cleanlinessRatingPanel = new StarRatingPanel();
-        JLabel roomLabel = new JLabel("Note de la chambre:");
-        StarRatingPanel roomRatingPanel = new StarRatingPanel();
-        JLabel locationLabel = new JLabel("Note de l'emplacement:");
-        StarRatingPanel locationRatingPanel = new StarRatingPanel();
-        JLabel serviceLabel = new JLabel("Note du service:");
-        StarRatingPanel serviceRatingPanel = new StarRatingPanel();
+        // Ajouter des composants pour les détails de l'hôtel
+        addLabelAndTextField(hotelPanel, "Nom de l'hôtel:", hotelName);
+        addLabelAndStarRatingPanel(hotelPanel, "Note de sécurité:");
+        addLabelAndStarRatingPanel(hotelPanel, "Note de nourriture:");
+        addLabelAndStarRatingPanel(hotelPanel, "Note de propreté:");
+        addLabelAndStarRatingPanel(hotelPanel, "Note de la chambre:");
+        addLabelAndStarRatingPanel(hotelPanel, "Note de l'emplacement:");
+        addLabelAndStarRatingPanel(hotelPanel, "Note du service:");
 
-        // Ajouter des composants à hotelPanel
-        hotelPanel.add(nameLabel);
-        hotelPanel.add(nameField);
-        hotelPanel.add(securityLabel);
-        hotelPanel.add(securityRatingPanel);
-        hotelPanel.add(foodLabel);
-        hotelPanel.add(foodRatingPanel);
-        hotelPanel.add(cleanlinessLabel);
-        hotelPanel.add(cleanlinessRatingPanel);
-        hotelPanel.add(roomLabel);
-        hotelPanel.add(roomRatingPanel);
-        hotelPanel.add(locationLabel);
-        hotelPanel.add(locationRatingPanel);
-        hotelPanel.add(serviceLabel);
-        hotelPanel.add(serviceRatingPanel);
+        // Ajouter Commentaire Label et TextArea
+        JLabel commentLabel = new JLabel("Commentaire:");
+        JTextArea commentTextArea = new JTextArea();
+        JScrollPane commentScrollPane = new JScrollPane(commentTextArea);
+        hotelPanel.add(commentLabel);
+        hotelPanel.add(commentScrollPane);
 
         JButton submitButton = new JButton("Soumettre");
         submitButton.addActionListener(new ActionListener() {
@@ -120,23 +101,23 @@ public class HotelViewer extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Effectuer des actions lorsque le bouton de soumission est cliqué
                 // Vous pouvez enregistrer les notes dans la base de données ou effectuer d'autres actions
-                int securityRating = securityRatingPanel.getRating();
-                int foodRating = foodRatingPanel.getRating();
-                int cleanlinessRating = cleanlinessRatingPanel.getRating();
-                int roomRating = roomRatingPanel.getRating();
-                int locationRating = locationRatingPanel.getRating();
-                int serviceRating = serviceRatingPanel.getRating();
+                int securityRating = getStarRatingPanelValue(hotelPanel, "Note de sécurité:");
+                int foodRating = getStarRatingPanelValue(hotelPanel, "Note de nourriture:");
+                int cleanlinessRating = getStarRatingPanelValue(hotelPanel, "Note de propreté:");
+                int roomRating = getStarRatingPanelValue(hotelPanel, "Note de la chambre:");
+                int locationRating = getStarRatingPanelValue(hotelPanel, "Note de l'emplacement:");
+                int serviceRating = getStarRatingPanelValue(hotelPanel, "Note du service:");
+                String comment = commentTextArea.getText();
 
                 // Insérer les notes dans la table "notation" avec un timestamp
                 insertRatingsIntoTable(hotelName, securityRating, foodRating, cleanlinessRating,
-                        roomRating, locationRating, serviceRating);
+                        roomRating, locationRating, serviceRating, comment);
 
                 // Fermer hotelFrame
                 hotelFrame.dispose();
             }
         });
 
-        // Ajouter submitButton à hotelPanel
         hotelPanel.add(submitButton);
 
         // Ajouter hotelPanel à hotelFrame
@@ -148,8 +129,33 @@ public class HotelViewer extends JFrame {
         hotelFrame.setVisible(true);
     }
 
+    private void addLabelAndTextField(JPanel panel, String labelText, String initialValue) {
+        JLabel label = new JLabel(labelText);
+        JTextField textField = new JTextField(initialValue);
+        panel.add(label);
+        panel.add(textField);
+    }
+
+    private void addLabelAndStarRatingPanel(JPanel panel, String labelText) {
+        JLabel label = new JLabel(labelText);
+        StarRatingPanel starRatingPanel = new StarRatingPanel();
+        panel.add(label);
+        panel.add(starRatingPanel);
+    }
+
+    private int getStarRatingPanelValue(JPanel panel, String labelText) {
+        for (Component component : panel.getComponents()) {
+            if (component instanceof JLabel && ((JLabel) component).getText().equals(labelText)) {
+                int index = panel.getComponentZOrder(component);
+                StarRatingPanel starRatingPanel = (StarRatingPanel) panel.getComponent(index + 1);
+                return starRatingPanel.getRating();
+            }
+        }
+        return 0;
+    }
+
     private void insertRatingsIntoTable(String hotelName, int security, int food, int cleanliness,
-                                        int room, int location, int service) {
+                                        int room, int location, int service, String comment) {
         try {
             // Charger le pilote JDBC
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -159,38 +165,38 @@ public class HotelViewer extends JFrame {
             String username = "root";
             String password = "ramzi";
 
-            Connection connection = DriverManager.getConnection(url, username, password);
+            try (Connection connection = DriverManager.getConnection(url, username, password)) {
 
-            // Insérer les notes dans la table "notation" avec gestion de conflit
-            String insertQuery = "INSERT INTO notation (hotelid, securite, nourriture, proprete, chambre, emplacement, service, timestamp) " +
-                    "VALUES ((SELECT hotelid FROM hotel WHERE nomhotel = ?), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
-                    "ON DUPLICATE KEY UPDATE " +
-                    "securite = VALUES(securite), nourriture = VALUES(nourriture), proprete = VALUES(proprete), " +
-                    "chambre = VALUES(chambre), emplacement = VALUES(emplacement), service = VALUES(service), " +
-                    "timestamp = CURRENT_TIMESTAMP";
+                // Insérer les notes dans la table "notation" avec gestion de conflit
+                String insertQuery = "INSERT INTO notation (hotelid, securite, nourriture, proprete, chambre, emplacement, service, commentaire, timestamp) " +
+                        "VALUES ((SELECT hotelid FROM hotel WHERE nomhotel = ?), ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
+                        "ON DUPLICATE KEY UPDATE " +
+                        "securite = VALUES(securite), nourriture = VALUES(nourriture), proprete = VALUES(proprete), " +
+                        "chambre = VALUES(chambre), emplacement = VALUES(emplacement), service = VALUES(service), " +
+                        "commentaire = VALUES(commentaire), timestamp = CURRENT_TIMESTAMP";
 
-            PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-            insertStatement.setString(1, hotelName);
-            insertStatement.setInt(2, security);
-            insertStatement.setInt(3, food);
-            insertStatement.setInt(4, cleanliness);
-            insertStatement.setInt(5, room);
-            insertStatement.setInt(6, location);
-            insertStatement.setInt(7, service);
+                try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
+                    insertStatement.setString(1, hotelName);
+                    insertStatement.setInt(2, security);
+                    insertStatement.setInt(3, food);
+                    insertStatement.setInt(4, cleanliness);
+                    insertStatement.setInt(5, room);
+                    insertStatement.setInt(6, location);
+                    insertStatement.setInt(7, service);
+                    insertStatement.setString(8, comment);
 
-            insertStatement.executeUpdate();
+                    insertStatement.executeUpdate();
 
-            // Fermer les ressources
-            insertStatement.close();
-            connection.close();
-
-            System.out.println("Notes insérées dans la table 'notation' pour " + hotelName);
+                    System.out.println("Notes insérées dans la table 'notation' pour " + hotelName);
+                }
+            }
 
         } catch (ClassNotFoundException | SQLException ex) {
             ex.printStackTrace();
         }
     }
 
-
-
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new HotelViewer());
+    }
 }

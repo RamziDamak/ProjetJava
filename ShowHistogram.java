@@ -1,6 +1,6 @@
 import javax.swing.*;
 
-public class ShowHistogram {
+public class  ShowHistogram {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             HotelRatingsHistogram example = new HotelRatingsHistogram("Hotel Ratings Histogram");
